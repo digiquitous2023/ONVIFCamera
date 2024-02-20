@@ -18,6 +18,8 @@ enum CameraRequest {
   case getProfiles
   case getStreamURI(params: [String: String])
   case getServices
+  case SetPTZControll(params: [String: Any])
+  case SetPTZStop(params: [String: String])
 
   /// The soap action for the corresponding route
   var soapAction: String {
@@ -30,6 +32,10 @@ enum CameraRequest {
       return namespace + "/GetStreamUri"
     case .getServices:
       return namespace + "/GetServices"
+    case .SetPTZControll:
+        return namespace + "/ContinuousMove"
+    case .SetPTZStop:
+        return namespace + "/Stop"
     }
   }
 
@@ -39,6 +45,8 @@ enum CameraRequest {
       return "http://www.onvif.org/ver10/device/wsdl"
     case .getProfiles, .getStreamURI:
       return "http://www.onvif.org/ver20/media/wsdl"
+    case .SetPTZControll, .SetPTZStop:
+        return "http://www.onvif.org/ver20/ptz/wsdl"
     }
   }
 
@@ -55,12 +63,16 @@ enum CameraRequest {
   }
 
   /// Needed in `getStreamURI` to pass the profile token and the protocol
-  var params: [String: String]? {
+  var params: [String: Any]? {
     switch self {
     case .getStreamURI(let params):
       return params
     case .getServices:
       return ["IncludeCapability": "false"]
+    case .SetPTZControll(let params):
+        return params
+    case .SetPTZStop(let params):
+        return params
     default:
       return nil
     }
@@ -285,6 +297,40 @@ public class ONVIFCamera {
     // the correct rtsp port and the paths and args or uri
     return "rtsp://" + credential.login + ":" + credential.password + "@" + ipAddressWithPort + pathAndArgs
   }
+    
+    public func setPTZControll(profile: String, pan_x: Double, pan_y: Double, zoom: Int, panTilt: Bool) {
+        
+        var params: [String: Any] = [:]
+        if panTilt==true {
+            params = [
+                "ProfileToken": profile,
+                "Velocity": [
+                    "PanTilt": "",
+                    "attributes": ["x":"\(pan_x)", "y":"\(pan_y)", "xmlns":"http://www.onvif.org/ver10/schema"]
+                ]
+            ]
+        } else {
+            params = [
+                "ProfileToken": profile,
+                "Velocity": [
+                    "Zoom": "",
+                    "attributes": ["x":"\(zoom)", "xmlns":"http://www.onvif.org/ver10/schema"]
+                ]
+            ]
+        }
+        
+        performRequest(request: CameraRequest.SetPTZControll(params: params), response: { (result) in
+            print("setPTZControll.result : \(result)")
+        })
+    }
+    
+    public func setPTZStop(with profile: String) {
+        let params = ["ProfileToken": profile, "PanTilt": "true", "Zoom": "true"]
+        print("params : \(params)")
+        performRequest(request: CameraRequest.SetPTZStop(params: params), response: { (result) in
+            print("setPTZStop.result : \(result)")
+        })
+    }
 
   /// Private method to perform a SOAP request
   private func performRequest(request: CameraRequest, response: @escaping ([String: Any]) -> (),
