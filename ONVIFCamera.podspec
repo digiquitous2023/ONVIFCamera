@@ -6,5 +6,5 @@ Pod::Spec.new do |s|
   s.author       = { "chad" => "chad@digiquitous.com" }
   s.source       = { :git => "https://github.com/digiquitous2023/ONVIFCamera.git", :tag => "#{s.version}" }
   s.platform     = :ios, "9.0"
-  s.source_files = "Classes/**/*"
+  s.source_files = "ONVIFCamera/**/*"
 end
